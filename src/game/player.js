@@ -14,13 +14,23 @@ export class Player {
 
     this.velocity = new THREE.Vector3();
     this.keys = { forward: false, back: false, left: false, right: false };
+    this.touchMove = { x: 0, y: 0 };
     this.radius = 0.5;
 
     this._forward = new THREE.Vector3();
     this._right = new THREE.Vector3();
+    this._pitch = 0;
 
     window.addEventListener('keydown', (e) => this._onKey(e.code, true));
     window.addEventListener('keyup', (e) => this._onKey(e.code, false));
+  }
+
+  /** Rotate the camera directly by a screen-space drag delta. Used for touch look
+   * since PointerLockControls only reacts to real pointer-locked mousemove events. */
+  lookDelta(deltaX, deltaY, sensitivity) {
+    this.camera.rotation.y -= deltaX * sensitivity;
+    this._pitch = THREE.MathUtils.clamp(this._pitch - deltaY * sensitivity, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
+    this.camera.rotation.x = this._pitch;
   }
 
   _onKey(code, down) {
@@ -64,8 +74,11 @@ export class Player {
     if (this.keys.back) move.sub(this._forward);
     if (this.keys.right) move.add(this._right);
     if (this.keys.left) move.sub(this._right);
-    if (move.lengthSq() > 0) {
-      move.normalize();
+    if (this.touchMove.y) move.addScaledVector(this._forward, this.touchMove.y);
+    if (this.touchMove.x) move.addScaledVector(this._right, this.touchMove.x);
+    const moveLenSq = move.lengthSq();
+    if (moveLenSq > 1) move.multiplyScalar(1 / Math.sqrt(moveLenSq));
+    if (moveLenSq > 0) {
       this.velocity.addScaledVector(move, accel * delta);
     }
 

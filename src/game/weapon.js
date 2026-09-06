@@ -33,14 +33,18 @@ export class Weapon {
     this.camera.add(this.muzzleFlash);
 
     window.addEventListener('mousedown', (e) => {
-      if (e.button === 0) this._triggerHeld = true;
+      if (e.button === 0) this.setTrigger(true);
     });
     window.addEventListener('mouseup', (e) => {
-      if (e.button === 0) this._triggerHeld = false;
+      if (e.button === 0) this.setTrigger(false);
     });
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyR') this.startReload();
     });
+  }
+
+  setTrigger(held) {
+    this._triggerHeld = held;
   }
 
   get damage() {

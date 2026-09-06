@@ -9,9 +9,13 @@ import { Building } from './game/building.js';
 import { waveConfig } from './game/waves.js';
 import { ARENA_RADIUS, BUILDING_DEFS, WEAPON_BASE } from './game/constants.js';
 import * as UI from './game/ui.js';
+import { isTouchDevice, setupMobileControls } from './game/mobileControls.js';
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const isTouch = isTouchDevice();
+document.body.classList.toggle('touch', isTouch);
+
+const renderer = new THREE.WebGLRenderer({ antialias: !isTouch, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -26,8 +30,23 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-createWorld(scene);
+createWorld(scene, { lowSpec: isTouch });
 scene.add(camera);
+
+if (isTouch) {
+  UI.dom.startBtn.textContent = 'Tap to Play';
+  const startHint = document.getElementById('start-hint');
+  if (startHint) startHint.textContent = 'Left joystick to move · Drag screen to look · Fire / Reload / Build buttons';
+  const rotateHint = document.getElementById('rotate-hint');
+  const rotateHintClose = document.getElementById('rotate-hint-close');
+  if (rotateHint) {
+    rotateHint.classList.add('show');
+    rotateHintClose?.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      rotateHint.classList.remove('show');
+    });
+  }
+}
 
 const state = {
   started: false,
@@ -95,6 +114,13 @@ function refreshBuildUI() {
   );
 }
 
+const mobileBuildActions = document.getElementById('mobile-build-actions');
+
+function updateMobileBuildActionsVisibility() {
+  if (!mobileBuildActions) return;
+  mobileBuildActions.classList.toggle('hidden', !(isTouch && state.buildMode && state.selectedBuildType));
+}
+
 function selectBuildType(typeId) {
   state.selectedBuildType = typeId;
   if (ghost) {
@@ -115,6 +141,19 @@ function selectBuildType(typeId) {
   });
   scene.add(ghost);
   refreshBuildUI();
+  updateMobileBuildActionsVisibility();
+  if (isTouch) UI.dom.buildMenu.classList.add('hidden');
+}
+
+function cancelSelection() {
+  state.selectedBuildType = null;
+  if (ghost) {
+    scene.remove(ghost);
+    ghost = null;
+  }
+  refreshBuildUI();
+  updateMobileBuildActionsVisibility();
+  if (isTouch && state.buildMode) UI.dom.buildMenu.classList.remove('hidden');
 }
 
 function setTint(object3d, color) {
@@ -141,6 +180,7 @@ function toggleBuildMenu(force) {
   } else {
     refreshBuildUI();
   }
+  updateMobileBuildActionsVisibility();
 }
 
 const BUILD_REACH = 4.5;
@@ -299,6 +339,7 @@ function onTroopShoot(enemy, damage) {
 function endGame() {
   state.gameOver = true;
   player.controls.unlock();
+  setTouchControlsVisible(false);
   UI.showGameOver(`Wave ${state.wave} · ${state.kills} kills · ${Math.floor(state.coins)} coins earned`);
 }
 
@@ -324,11 +365,14 @@ function resetGame() {
   state.selectedBuildType = null;
   state.buildingCounts = { outpost: 0, barracks: 0, armory: 0, scrapyard: 0 };
   UI.dom.buildMenu.classList.add('hidden');
+  updateMobileBuildActionsVisibility();
 
   player.health = player.maxHealth;
   player.alive = true;
   player.camera.position.set(0, 1.7, 8);
   player.velocity.set(0, 0, 0);
+  player.touchMove.x = 0;
+  player.touchMove.y = 0;
 
   weapon.damageMult = 1;
   weapon.fireRateMult = 1;
@@ -349,12 +393,7 @@ window.addEventListener('keydown', (e) => {
     const map = { Digit1: 'outpost', Digit2: 'barracks', Digit3: 'armory', Digit4: 'scrapyard' };
     selectBuildType(map[e.code]);
   } else if (e.code === 'Escape' && state.selectedBuildType) {
-    state.selectedBuildType = null;
-    if (ghost) {
-      scene.remove(ghost);
-      ghost = null;
-    }
-    refreshBuildUI();
+    cancelSelection();
   }
 });
 
@@ -362,37 +401,43 @@ renderer.domElement.addEventListener('mousedown', (e) => {
   if (!state.started || state.gameOver) return;
   if (state.buildMode) {
     if (e.button === 0) confirmPlacement();
-    else if (e.button === 2) {
-      state.selectedBuildType = null;
-      if (ghost) {
-        scene.remove(ghost);
-        ghost = null;
-      }
-      refreshBuildUI();
-    }
+    else if (e.button === 2) cancelSelection();
   }
 });
 renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
-renderer.domElement.addEventListener('click', () => {
-  if (state.started && !state.gameOver && !player.controls.isLocked) {
-    player.controls.lock();
-  }
-});
+if (!isTouch) {
+  renderer.domElement.addEventListener('click', () => {
+    if (state.started && !state.gameOver && !player.controls.isLocked) {
+      player.controls.lock();
+    }
+  });
+}
+
+const touchControlsEl = document.getElementById('touch-controls');
+function setTouchControlsVisible(visible) {
+  if (isTouch) touchControlsEl?.classList.toggle('hidden', !visible);
+}
 
 UI.dom.startBtn.addEventListener('click', async () => {
   UI.dom.startBtn.textContent = 'Loading...';
   UI.dom.startBtn.disabled = true;
   await init();
   UI.dom.startScreen.classList.add('hidden');
-  player.controls.lock();
+  if (isTouch) {
+    setupMobileControls({ player, weapon, toggleBuild: toggleBuildMenu, confirmPlacement, cancelSelection });
+    setTouchControlsVisible(true);
+  } else {
+    player.controls.lock();
+  }
   state.started = true;
   startNextWave();
 });
 
 UI.dom.restartBtn.addEventListener('click', () => {
   resetGame();
-  player.controls.lock();
+  if (!isTouch) player.controls.lock();
+  setTouchControlsVisible(true);
 });
 
 async function init() {

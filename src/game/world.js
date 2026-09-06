@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ARENA_RADIUS } from './constants.js';
 
-export function createWorld(scene) {
+export function createWorld(scene, { lowSpec = false } = {}) {
   scene.background = new THREE.Color(0x0b0f14);
   scene.fog = new THREE.Fog(0x0b0f14, 25, 75);
 
@@ -11,7 +11,8 @@ export function createWorld(scene) {
   const sun = new THREE.DirectionalLight(0xfff2d6, 1.4);
   sun.position.set(30, 40, 10);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const shadowRes = lowSpec ? 1024 : 2048;
+  sun.shadow.mapSize.set(shadowRes, shadowRes);
   sun.shadow.camera.left = -50;
   sun.shadow.camera.right = 50;
   sun.shadow.camera.top = 50;
@@ -37,7 +38,8 @@ export function createWorld(scene) {
   // simple scattered rocks/props for visual interest, purely decorative
   const rockGeo = new THREE.DodecahedronGeometry(0.6, 0);
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x555f5a, roughness: 1 });
-  for (let i = 0; i < 24; i++) {
+  const rockCount = lowSpec ? 12 : 24;
+  for (let i = 0; i < rockCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const dist = ARENA_RADIUS + 3 + Math.random() * 12;
     const rock = new THREE.Mesh(rockGeo, rockMat);
