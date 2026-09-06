@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Coin Siege — Survival</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2214%22 fill=%22%23ffd24a%22 stroke=%22%23221a06%22 stroke-width=%222%22/></svg>" />
+  <link rel="stylesheet" href="./src/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="crosshair"></div>
+
+  <div id="hud">
+    <div id="hud-top-left">
+      <div class="stat"><span class="icon">❤</span><div class="bar-track"><div id="health-bar" class="bar-fill health"></div></div><span id="health-text">100</span></div>
+      <div class="stat"><span class="icon coin-icon">●</span><span id="coin-count">0</span></div>
+    </div>
+    <div id="hud-top-right">
+      <div id="wave-label">Wave 1</div>
+      <div id="wave-sub">Get ready...</div>
+    </div>
+    <div id="hud-bottom-right">
+      <div id="ammo-count">30 / 90</div>
+      <div id="weapon-name">AK</div>
+    </div>
+    <div id="hud-bottom-left">
+      <div id="kill-count">Kills: 0</div>
+      <div id="hint">[B] Build &nbsp; [R] Reload &nbsp; [1-4] Select</div>
+    </div>
+  </div>
+
+  <div id="build-menu" class="hidden">
+    <h3>Build (coins: <span id="build-coins">0</span>)</h3>
+    <div id="build-list"></div>
+    <div class="build-footer">Left click ground to place &middot; Right click / Esc to cancel &middot; B to close</div>
+  </div>
+
+  <div id="damage-flash"></div>
+
+  <div id="rotate-hint">Rotate your device to landscape for the best experience &nbsp;<button id="rotate-hint-close" aria-label="Dismiss">&times;</button></div>
+
+  <div id="touch-controls" class="hidden">
+    <div id="look-zone"></div>
+    <div id="joystick-base"><div id="joystick-nub"></div></div>
+    <div id="mobile-build-actions" class="hidden">
+      <button id="place-btn-mobile">Place</button>
+      <button id="cancel-btn-mobile">Cancel</button>
+    </div>
+    <button id="build-btn-mobile">Build</button>
+    <button id="reload-btn-mobile">Reload</button>
+    <button id="fire-btn">Fire</button>
+  </div>
+
+  <div id="start-screen" class="overlay">
+    <div class="panel">
+      <h1>COIN SIEGE</h1>
+      <p>Kill enemies for coins. Spend coins on buildings that raise troops, income and weapons. Survive as many waves as you can.</p>
+      <ul class="legend">
+        <li><b>Outpost</b> — passive coin income</li>
+        <li><b>Barracks</b> — trains troops that fight for you</li>
+        <li><b>Armory</b> — upgrades your weapon</li>
+        <li><b>Scrapyard</b> — bonus coins per kill</li>
+      </ul>
+      <button id="start-btn">Tap to Play</button>
+      <p class="tiny" id="start-hint">WASD move &middot; Mouse look &middot; Click to shoot &middot; B to build</p>
+    </div>
+  </div>
+
+  <div id="gameover-screen" class="overlay hidden">
+    <div class="panel">
+      <h1>YOU FELL</h1>
+      <p id="gameover-stats"></p>
+      <button id="restart-btn">Try Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
